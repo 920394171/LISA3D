@@ -4,7 +4,7 @@
   "val_data_dir": "/data/smb/ttzz/dataset/LISA3D/val",
   "test_data_dir": "/data/smb/ttzz/dataset/LISA3D/test",
   "unlabeled_data_dir": "/data/smb/ttzz/dataset/LISA3D/unlabeled",
-  "mllm_path": "liuhaotian/llava-v1.5-7b",
+  "mllm_path": "/data/smb/ttzz/pretrained/llava-v1.5-7b",
   "vision_pretrained": "/data/smb/ttzz/pretrained/sam_vit_h.pth",
   "hidden_size": 4096,
   "out_dim": 256,
