@@ -1,19 +1,30 @@
 from dataclasses import dataclass
 from typing import Optional, List, Union
+import os
 
 
 @dataclass
 class LISA3DConfig:
     """LISA3D模型配置"""
+    # 基础路径
+    base_dir: str = "/data/smb/ttzz/dataset/LISA3D"  # 数据集基础目录
+    
+    # 数据路径
+    train_data_dir: str = "/data/smb/ttzz/dataset/LISA3D/train"  # 训练数据目录
+    val_data_dir: str = "/data/smb/ttzz/dataset/LISA3D/val"  # 验证数据目录
+    test_data_dir: str = "/data/smb/ttzz/dataset/LISA3D/test"  # 测试数据目录
+    unlabeled_data_dir: str = "/data/smb/ttzz/dataset/LISA3D/unlabeled"  # 无标签数据目录
+    
     # 模型路径
     mllm_path: str = "liuhaotian/llava-v1.5-7b"  # LLaVA模型路径
-    vision_pretrained: Optional[str] = None  # SAM预训练模型路径
+    vision_pretrained: Optional[str] = "/data/smb/ttzz/pretrained/sam_vit_h.pth"  # SAM预训练模型路径
     
     # 模型结构参数
     hidden_size: int = 4096  # MLLM隐藏层大小
     out_dim: int = 256  # 特征维度
     num_cls: int = 14  # 分割类别数量（器官数量）
     seg_token_idx: int = 32000  # [seg]标记的索引
+    input_shape: List[int] = (64, 128, 128)  # 输入形状 (D, H, W)
     
     # LoRA参数
     use_lora: bool = True  # 是否使用LoRA
@@ -47,13 +58,22 @@ class LISA3DConfig:
     ]
     
     # 保存和日志
-    save_dir: str = "./checkpoints"  # 模型保存路径
-    log_dir: str = "./logs"  # 日志保存路径
+    save_dir: str = "/data/smb/ttzz/checkpoints/LISA3D"  # 模型保存路径
+    log_dir: str = "/data/smb/ttzz/logs/LISA3D"  # 日志保存路径
     save_interval: int = 10  # 保存间隔（轮）
     eval_interval: int = 5  # 评估间隔（轮）
     
     # 混合精度训练
     use_amp: bool = True  # 是否使用混合精度训练
+    
+    # 分布式训练
+    distributed: bool = False  # 是否使用分布式训练
+    
+    # 数据增强
+    use_augmentation: bool = True  # 是否使用数据增强
+    
+    # 推理参数
+    inference_threshold: float = 0.5  # 分割阈值
     
     def __post_init__(self):
         """验证配置参数"""
@@ -64,6 +84,41 @@ class LISA3DConfig:
 def get_default_config() -> LISA3DConfig:
     """获取默认配置"""
     return LISA3DConfig()
+
+
+def get_task_config(task: str) -> LISA3DConfig:
+    """根据任务获取配置"""
+    config = LISA3DConfig()
+    
+    if task == "synapse":
+        config.base_dir = "/data/smb/ttzz/dataset/Synapse"
+        config.train_data_dir = "/data/smb/ttzz/dataset/Synapse/train"
+        config.val_data_dir = "/data/smb/ttzz/dataset/Synapse/val"
+        config.test_data_dir = "/data/smb/ttzz/dataset/Synapse/test"
+        config.unlabeled_data_dir = "/data/smb/ttzz/dataset/Synapse/unlabeled"
+        config.save_dir = "/data/smb/ttzz/checkpoints/LISA3D/synapse"
+        config.log_dir = "/data/smb/ttzz/logs/LISA3D/synapse"
+        config.input_shape = (64, 128, 128)
+        config.num_cls = 14
+    elif task == "amos":
+        config.base_dir = "/data/smb/ttzz/dataset/AMOS"
+        config.train_data_dir = "/data/smb/ttzz/dataset/AMOS/train"
+        config.val_data_dir = "/data/smb/ttzz/dataset/AMOS/val"
+        config.test_data_dir = "/data/smb/ttzz/dataset/AMOS/test"
+        config.unlabeled_data_dir = "/data/smb/ttzz/dataset/AMOS/unlabeled"
+        config.save_dir = "/data/smb/ttzz/checkpoints/LISA3D/amos"
+        config.log_dir = "/data/smb/ttzz/logs/LISA3D/amos"
+        config.input_shape = (64, 128, 128)
+        config.num_cls = 16
+        config.organ_names = [
+            "spleen", "right kidney", "left kidney", "gallbladder", "liver", 
+            "stomach", "pancreas", "aorta", "inferior vena cava", "right adrenal gland", 
+            "left adrenal gland", "duodenum", "bladder", "prostate/uterus", "right lung", "left lung"
+        ]
+    else:
+        raise ValueError(f"未知任务: {task}")
+    
+    return config
 
 
 def load_config_from_file(config_path: str) -> LISA3DConfig:
