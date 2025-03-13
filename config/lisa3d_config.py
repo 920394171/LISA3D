@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional, List, Union
 import os
 
@@ -16,7 +16,7 @@ class LISA3DConfig:
     unlabeled_data_dir: str = "/data/smb/ttzz/dataset/LISA3D/unlabeled"  # 无标签数据目录
     
     # 模型路径
-    mllm_path: str = "liuhaotian/llava-v1.5-7b"  # LLaVA模型路径
+    mllm_path: str = "/data/smb/ttzz/pretrained/llava-v1.5-7b"  # LLaVA模型路径
     vision_pretrained: Optional[str] = "/data/smb/ttzz/pretrained/sam_vit_h.pth"  # SAM预训练模型路径
     
     # 模型结构参数
@@ -51,11 +51,11 @@ class LISA3DConfig:
     num_workers: int = 4  # 数据加载线程数
     
     # 器官列表
-    organ_names: List[str] = [
+    organ_names: List[str] = field(default_factory=lambda: [
         "spleen", "right kidney", "left kidney", "gallbladder", "liver", 
         "stomach", "pancreas", "aorta", "inferior vena cava", "right adrenal gland", 
         "left adrenal gland", "duodenum", "bladder", "prostate/uterus"
-    ]
+    ])  # 器官名称列表
     
     # 保存和日志
     save_dir: str = "/data/smb/ttzz/checkpoints/LISA3D"  # 模型保存路径
@@ -74,6 +74,9 @@ class LISA3DConfig:
     
     # 推理参数
     inference_threshold: float = 0.5  # 分割阈值
+    
+    # 分词器名称或路径
+    tokenizer_name_or_path: str = "liuhaotian/llava-v1.5-7b"  # 分词器名称或路径
     
     def __post_init__(self):
         """验证配置参数"""
@@ -132,8 +135,15 @@ def load_config_from_file(config_path: str) -> LISA3DConfig:
     with open(config_path, 'r') as f:
         config_dict = json.load(f)
     
-    # 创建配置对象
-    config = LISA3DConfig(**config_dict)
+    # 创建配置对象 - 只使用dataclass字段的参数
+    valid_fields = [field.name for field in LISA3DConfig.__dataclass_fields__.values()]
+    filtered_dict = {k: v for k, v in config_dict.items() if k in valid_fields}
+    config = LISA3DConfig(**filtered_dict)
+    
+    # 手动设置非dataclass字段的属性
+    for k, v in config_dict.items():
+        if k not in valid_fields and hasattr(config, k):
+            setattr(config, k, v)
     
     return config
 
